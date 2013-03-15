@@ -45,7 +45,7 @@ static int compat_socket_unix_call(lua_State *L)
 /*-------------------------------------------------------------------------*\
 * Initializes module
 \*-------------------------------------------------------------------------*/
-int luaopen_socket_unix(lua_State *L)
+int unix_open(lua_State *L)
 {
     int i;
     lua_newtable(L);
@@ -66,5 +66,7 @@ int luaopen_socket_unix(lua_State *L)
     lua_pushvalue(L, socket_unix_table);
     lua_setmetatable(L, socket_unix_table);
 
-    return 1;
+    lua_setfield(L, -2, "unix");
+
+    return 0;
 }

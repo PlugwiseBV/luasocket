@@ -10,7 +10,7 @@
 #include "auxiliar.h"
 #include "socket.h"
 #include "options.h"
-#include "unix.h"
+#include "serial.h"
 #include <sys/un.h>
 
 #include "fcntl.h"      /* file control definitions */
@@ -18,12 +18,6 @@
 #include "stdbool.h"
 
 /*
-Reuses userdata definition from unix.h, since it is useful for all
-stream-like objects.
-
-If we stored the serial path for use in error messages or userdata
-printing, we might need our own userdata definition.
-
 Group usage is semi-inherited from unix.c, but unnecessary since we
 have only one object type.
 */
@@ -60,16 +54,23 @@ static luaL_Reg serial_methods[] = {
     {NULL,          NULL}
 };
 
+/* functions in library namespace */
+static luaL_Reg func[] = {
+    {"serial", global_create},
+    {NULL, NULL}
+};
+
 /*-------------------------------------------------------------------------*\
 * Initializes module
 \*-------------------------------------------------------------------------*/
-LUASOCKET_API int luaopen_socket_serial(lua_State *L) {
+int serial_open(lua_State *L) {
     /* create classes */
     auxiliar_newclass(L, "serial{client}", serial_methods);
     /* create class groups */
     auxiliar_add2group(L, "serial{client}", "serial{any}");
-    lua_pushcfunction(L, global_create);
-    return 1;
+    /* define library functions */
+    luaL_setfuncs(L, func, 0);
+    return 0;
 }
 
 /*=========================================================================*\
@@ -79,44 +80,44 @@ LUASOCKET_API int luaopen_socket_serial(lua_State *L) {
 * Just call buffered IO methods
 \*-------------------------------------------------------------------------*/
 static int meth_send(lua_State *L) {
-    p_unix un = (p_unix) auxiliar_checkclass(L, "serial{client}", 1);
-    return buffer_meth_send(L, &un->buf);
+    p_serial srl = (p_serial) auxiliar_checkclass(L, "serial{client}", 1);
+    return buffer_meth_send(L, &srl->buf);
 }
 
 static int meth_receive(lua_State *L) {
-    p_unix un = (p_unix) auxiliar_checkclass(L, "serial{client}", 1);
-    return buffer_meth_receive(L, &un->buf);
+    p_serial srl = (p_serial) auxiliar_checkclass(L, "serial{client}", 1);
+    return buffer_meth_receive(L, &srl->buf);
 }
 
 static int meth_getstats(lua_State *L) {
-    p_unix un = (p_unix) auxiliar_checkclass(L, "serial{client}", 1);
-    return buffer_meth_getstats(L, &un->buf);
+    p_serial srl = (p_serial) auxiliar_checkclass(L, "serial{client}", 1);
+    return buffer_meth_getstats(L, &srl->buf);
 }
 
 static int meth_setstats(lua_State *L) {
-    p_unix un = (p_unix) auxiliar_checkclass(L, "serial{client}", 1);
-    return buffer_meth_setstats(L, &un->buf);
+    p_serial srl = (p_serial) auxiliar_checkclass(L, "serial{client}", 1);
+    return buffer_meth_setstats(L, &srl->buf);
 }
 
 /*-------------------------------------------------------------------------*\
 * Select support methods
 \*-------------------------------------------------------------------------*/
 static int meth_getfd(lua_State *L) {
-    p_unix un = (p_unix) auxiliar_checkgroup(L, "serial{any}", 1);
-    lua_pushnumber(L, (int) un->sock);
+    p_serial srl = (p_serial) auxiliar_checkgroup(L, "serial{any}", 1);
+    lua_pushnumber(L, (int) srl->sock);
     return 1;
 }
 
 /* this is very dangerous, but can be handy for those that are brave enough */
 static int meth_setfd(lua_State *L) {
-    p_unix un = (p_unix) auxiliar_checkgroup(L, "serial{any}", 1);
-    un->sock = (t_socket) luaL_checknumber(L, 2);
+    p_serial srl = (p_serial) auxiliar_checkgroup(L, "serial{any}", 1);
+    srl->sock = (t_socket) luaL_checknumber(L, 2);
     return 0;
 }
 
 static int meth_dirty(lua_State *L) {
-    p_unix un = (p_unix) auxiliar_checkgroup(L, "serial{any}", 1);
-    lua_pushboolean(L, !buffer_isempty(&un->buf));
+    p_serial srl = (p_serial) auxiliar_checkgroup(L, "serial{any}", 1);
+    lua_pushboolean(L, !buffer_isempty(&srl->buf));
     return 1;
 }
 
@@ -125,8 +126,8 @@ static int meth_dirty(lua_State *L) {
 \*-------------------------------------------------------------------------*/
 static int meth_close(lua_State *L)
 {
-    p_unix un = (p_unix) auxiliar_checkgroup(L, "serial{any}", 1);
-    socket_destroy(&un->sock);
+    p_serial srl = (p_serial) auxiliar_checkgroup(L, "serial{any}", 1);
+    socket_destroy(&srl->sock);
     lua_pushnumber(L, 1);
     return 1;
 }
@@ -136,8 +137,8 @@ static int meth_close(lua_State *L)
 * Just call tm methods
 \*-------------------------------------------------------------------------*/
 static int meth_settimeout(lua_State *L) {
-    p_unix un = (p_unix) auxiliar_checkgroup(L, "serial{any}", 1);
-    return timeout_meth_settimeout(L, &un->tm);
+    p_serial srl = (p_serial) auxiliar_checkgroup(L, "serial{any}", 1);
+    return timeout_meth_settimeout(L, &srl->tm);
 }
 
 /*=========================================================================*\
@@ -402,9 +403,9 @@ static const char *const tcsetattr_speed_options[] = {
 };
 
 static int meth_options(lua_State *L) {
-    p_unix un = (p_unix) auxiliar_checkgroup(L, "serial{any}", 1);
+    p_serial srl = (p_serial) auxiliar_checkgroup(L, "serial{any}", 1);
     struct termios options;
-    tcgetattr(un->sock, &options);
+    tcgetattr(srl->sock, &options);
     if (!lua_isnoneornil(L, 2)) {
         if (lua_istable(L, 2)) {
             int when = TCSANOW;
@@ -418,7 +419,7 @@ static int meth_options(lua_State *L) {
             };
             set_termios(L, &options, 2);
             /* set options */
-            tcsetattr(un->sock, when, &options);
+            tcsetattr(srl->sock, when, &options);
         } else {
             return luaL_argerror(L, 2, "Please pass a table or nil");
         };
@@ -534,7 +535,7 @@ static int global_create(lua_State *L) {
     const char* mode    = luaL_checkstring(L, 2);
     int fcntl_ret = 0;
     struct termios options;
-    p_unix un;
+    p_serial srl;
     t_socket sock;
     int i = 0;
     char m;
@@ -555,7 +556,7 @@ static int global_create(lua_State *L) {
     /* printf("read, write: %i, %i\n", rd, wr);*/
 
     /* allocate unix object */
-    un = (p_unix) lua_newuserdata(L, sizeof(t_unix));
+    srl = (p_serial) lua_newuserdata(L, sizeof(t_serial));
 
     /* open serial device */
     sock = open(path, ((rd && wr)?O_RDWR:((rd)?O_RDONLY:O_WRONLY)) | O_NOCTTY | O_NDELAY);
@@ -624,10 +625,10 @@ static int global_create(lua_State *L) {
 
     /* initialize remaining structure fields */
     socket_setnonblocking(&sock);
-    un->sock = sock;
-    io_init(&un->io, (p_send) socket_write, (p_recv) socket_read,
-            (p_error) socket_ioerror, &un->sock);
-    timeout_init(&un->tm, -1, -1);
-    buffer_init(&un->buf, &un->io, &un->tm);
+    srl->sock = sock;
+    io_init(&srl->io, (p_send) socket_write, (p_recv) socket_read,
+            (p_error) socket_ioerror, &srl->sock);
+    timeout_init(&srl->tm, -1, -1);
+    buffer_init(&srl->buf, &srl->io, &srl->tm);
     return 1;
 }

@@ -257,8 +257,6 @@ SOCKET_V=3.0-rc1
 MIME_V=1.0.3
 SOCKET_SO=socket-$(SOCKET_V).$(SO)
 MIME_SO=mime-$(MIME_V).$(SO)
-UNIX_SO=unix.$(SO)
-SERIAL_SO=serial.$(SO)
 SOCKET=$(SOCKET_$(PLAT))
 
 #------
@@ -290,39 +288,16 @@ SOCKET_OBJS= \
 	tcp.$(O) \
 	udp.$(O)
 
+ifneq ($(PLAT),win32)
+	SOCKET_OBJS += unix.$(O) unixstream.$(O) unixdgram.$(O) serial.$(O)
+endif
+
 #------
 # Modules belonging mime-core
 #
 MIME_OBJS= \
 	mime.$(O) \
 	compat.$(O)
-
-#------
-# Modules belonging unix (local domain sockets)
-#
-UNIX_OBJS=\
-	buffer.$(O) \
-	auxiliar.$(O) \
-	options.$(O) \
-	timeout.$(O) \
-	io.$(O) \
-	usocket.$(O) \
-	unixstream.$(O) \
-	unixdgram.$(O) \
-	compat.$(O) \
-	unix.$(O)
-
-#------
-# Modules belonging to serial (device streams)
-#
-SERIAL_OBJS=\
-	buffer.$(O) \
-	auxiliar.$(O) \
-	options.$(O) \
-	timeout.$(O) \
-	io.$(O) \
-	usocket.$(O) \
-	serial.$(O)
 
 #------
 # Files to install
@@ -350,13 +325,13 @@ freebsd:
 	$(MAKE) all-unix PLAT=freebsd
 
 macosx:
-	$(MAKE) all-unix PLAT=macosx
+	$(MAKE) all PLAT=macosx
 
 win32:
 	$(MAKE) all PLAT=win32
 
 linux:
-	$(MAKE) all-unix PLAT=linux
+	$(MAKE) all PLAT=linux
 
 mingw:
 	$(MAKE) all PLAT=mingw
@@ -378,14 +353,6 @@ $(SOCKET_SO): $(SOCKET_OBJS)
 $(MIME_SO): $(MIME_OBJS)
 	$(LD) $(MIME_OBJS) $(LDFLAGS)$@
 
-all-unix: all $(UNIX_SO) $(SERIAL_SO)
-
-$(UNIX_SO): $(UNIX_OBJS)
-	$(LD) $(UNIX_OBJS) $(LDFLAGS)$@
-
-$(SERIAL_SO): $(SERIAL_OBJS)
-	$(LD) $(SERIAL_OBJS) $(LDFLAGS)$@
-
 install: 
 	$(INSTALL_DIR) $(INSTALL_TOP_LDIR)
 	$(INSTALL_DATA) $(TO_TOP_LDIR) $(INSTALL_TOP_LDIR)
@@ -396,16 +363,12 @@ install:
 	$(INSTALL_DIR) $(INSTALL_MIME_CDIR)
 	$(INSTALL_EXEC) $(MIME_SO) $(INSTALL_MIME_CDIR)/core.$(SO)
 
-install-unix: install
-	$(INSTALL_EXEC) $(UNIX_SO) $(INSTALL_SOCKET_CDIR)/$(UNIX_SO)
-	$(INSTALL_EXEC) $(SERIAL_SO) $(INSTALL_SOCKET_CDIR)/$(SERIAL_SO)
-
 local:
 	$(MAKE) install INSTALL_TOP_CDIR=.. INSTALL_TOP_LDIR=..
 
 clean:
-	rm -f $(SOCKET_SO) $(SOCKET_OBJS) $(SERIAL_OBJS)
-	rm -f $(MIME_SO) $(UNIX_SO) $(SERIAL_SO) $(MIME_OBJS) $(UNIX_OBJS)
+	rm -f $(SOCKET_SO) $(SOCKET_OBJS)
+	rm -f $(MIME_SO) $(MIME_OBJS)
 
 .PHONY: all $(PLATS) default clean echo none
 
@@ -420,7 +383,7 @@ inet.$(O): inet.c inet.h socket.h io.h timeout.h usocket.h
 io.$(O): io.c io.h timeout.h
 luasocket.$(O): luasocket.c luasocket.h auxiliar.h except.h \
 	timeout.h buffer.h io.h inet.h socket.h usocket.h tcp.h \
-	udp.h select.h
+	udp.h select.h unix.h serial.h
 mime.$(O): mime.c mime.h
 options.$(O): options.c auxiliar.h options.h socket.h io.h \
 	timeout.h usocket.h inet.h

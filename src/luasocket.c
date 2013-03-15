@@ -31,6 +31,10 @@
 #include "tcp.h"
 #include "udp.h"
 #include "select.h"
+#ifndef _WIN32
+#include "serial.h"
+#include "unix.h"
+#endif
 
 /*-------------------------------------------------------------------------*\
 * Internal function prototypes
@@ -51,6 +55,10 @@ static const luaL_Reg mod[] = {
     {"tcp", tcp_open},
     {"udp", udp_open},
     {"select", select_open},
+#ifndef _WIN32
+    {"serial", serial_open},
+    {"unix", unix_open},
+#endif
     {NULL, NULL}
 };
 
