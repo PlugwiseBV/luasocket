@@ -146,8 +146,6 @@ SOCKET_V=2.1
 MIME_V=1.0.3
 SOCKET_SO=socket.$(SO).$(SOCKET_V)
 MIME_SO=mime.$(SO).$(MIME_V)
-UNIX_SO=unix.$(SO)
-SERIAL_SO=serial.$(SO)
 SOCKET=$(SOCKET_$(PLAT))
 
 #------
@@ -178,35 +176,15 @@ SOCKET_OBJS= \
 	tcp.$(O) \
 	udp.$(O)
 
+ifneq ($(PLAT),win32)
+	SOCKET_OBJS += unix.$(O) serial.$(O)
+endif
+
 #------
 # Modules belonging mime-core
 #
 MIME_OBJS= \
 	mime.$(O)
-
-#------
-# Modules belonging unix (local domain sockets)
-#
-UNIX_OBJS=\
-	buffer.$(O) \
-	auxiliar.$(O) \
-	options.$(O) \
-	timeout.$(O) \
-	io.$(O) \
-	usocket.$(O) \
-	unix.$(O)
-
-#------
-# Modules belonging to serial (device streams)
-#
-SERIAL_OBJS:=\
-	buffer.$(O) \
-	auxiliar.$(O) \
-	options.$(O) \
-	timeout.$(O) \
-	io.$(O) \
-	usocket.$(O) \
-	serial.$(O)
 
 #------
 # Files to install
@@ -230,13 +208,13 @@ TO_TOP_SHARE= \
 default: $(PLAT)
 
 macosx:
-	$(MAKE) all-unix PLAT=macosx
+	$(MAKE) all PLAT=macosx
 
 win32:
 	$(MAKE) all PLAT=win32
 
 linux:
-	$(MAKE) all-unix PLAT=linux
+	$(MAKE) all PLAT=linux
 
 none:
 	@echo "Please run"
@@ -252,14 +230,6 @@ $(SOCKET_SO): $(SOCKET_OBJS)
 $(MIME_SO): $(MIME_OBJS)
 	$(LD) $(MIME_OBJS) $(LDFLAGS)$@ 
 
-all-unix: all $(UNIX_SO) $(SERIAL_SO)
-
-$(UNIX_SO): $(UNIX_OBJS)
-	$(LD) $(UNIX_OBJS) $(LDFLAGS)$@ 
-
-$(SERIAL_SO): $(SERIAL_OBJS)
-	$(LD) $(SERIAL_OBJS) $(LDFLAGS)$@
-
 install: 
 	mkdir -p $(INSTALL_TOP_SHARE)
 	$(INSTALL_DATA) $(TO_TOP_SHARE) $(INSTALL_TOP_SHARE)
@@ -270,16 +240,12 @@ install:
 	mkdir -p $(INSTALL_MIME_LIB)
 	$(INSTALL_EXEC) $(MIME_SO) $(INSTALL_MIME_LIB)/core.$(SO)
 
-install-unix: install
-	$(INSTALL_EXEC) $(UNIX_SO) $(INSTALL_SOCKET_LIB)/$(UNIX_SO)
-	$(INSTALL_EXEC) $(SERIAL_SO) $(INSTALL_SOCKET_LIB)/$(SERIAL_SO)
-
 local:
 	$(MAKE) install INSTALL_TOP_LIB=.. INSTALL_TOP_SHARE=..
 
 clean:
 	rm -f $(SOCKET_SO) $(SOCKET_OBJS)
-	rm -f $(MIME_SO) $(UNIX_SO) $(SERIAL_SO) $(MIME_OBJS) $(UNIX_OBJS)
+	rm -f $(MIME_SO) $(MIME_OBJS)
 
 .PHONY: all $(PLATS) default clean echo none
 
@@ -293,7 +259,7 @@ inet.$(O): inet.c inet.h socket.h io.h timeout.h usocket.h
 io.$(O): io.c io.h timeout.h
 luasocket.$(O): luasocket.c luasocket.h auxiliar.h except.h \
 	timeout.h buffer.h io.h inet.h socket.h usocket.h tcp.h \
-	udp.h select.h
+	udp.h select.h unix.h serial.h
 mime.$(O): mime.c mime.h
 options.$(O): options.c auxiliar.h options.h socket.h io.h \
 	timeout.h usocket.h inet.h

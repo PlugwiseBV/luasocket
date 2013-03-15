@@ -78,7 +78,7 @@ static luaL_Reg func[] = {
 /*-------------------------------------------------------------------------*\
 * Initializes module
 \*-------------------------------------------------------------------------*/
-int luaopen_socket_unix(lua_State *L) {
+int unix_open(lua_State *L) {
     /* create classes */
     auxiliar_newclass(L, "unix{master}", unix_methods);
     auxiliar_newclass(L, "unix{client}", unix_methods);
@@ -87,11 +87,13 @@ int luaopen_socket_unix(lua_State *L) {
     auxiliar_add2group(L, "unix{master}", "unix{any}");
     auxiliar_add2group(L, "unix{client}", "unix{any}");
     auxiliar_add2group(L, "unix{server}", "unix{any}");
-    /* make sure the function ends up in the package table */
+    luaL_openlib(L, NULL, func, 0);
+    /* make sure the function ends up in the package table * /
     luaL_openlib(L, "socket", func, 0);
-    /* return the function instead of the 'socket' table */
+    / * return the function instead of the 'socket' table * /
     lua_pushstring(L, "unix");
     lua_gettable(L, -2);
+    */
     return 1;
 }
 
