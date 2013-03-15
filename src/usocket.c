@@ -120,8 +120,13 @@ int socket_select(t_socket n, fd_set *rfds, fd_set *wfds, fd_set *efds,
 \*-------------------------------------------------------------------------*/
 int socket_create(p_socket ps, int domain, int type, int protocol) {
     *ps = socket(domain, type, protocol);
-    if (*ps != SOCKET_INVALID) return IO_DONE; 
-    else return errno; 
+    if (*ps != SOCKET_INVALID) {
+        /*  We don't want to share the file descriptor with any children we fork. */
+        fcntl(*ps, F_SETFD, FD_CLOEXEC);
+        return IO_DONE;
+    } else {
+        return errno;
+    }
 }
 
 /*-------------------------------------------------------------------------*\

@@ -611,6 +611,9 @@ static int global_create(lua_State *L) {
         return 3;
     }
 
+    /*  We don't want to share the file descriptor with any children we fork. */
+    fcntl(sock, F_SETFD, FD_CLOEXEC);
+
     /*  gather the options */
     if (lua_istable(L, 2)) {
         int success;
