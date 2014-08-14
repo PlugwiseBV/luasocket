@@ -27,19 +27,20 @@ function connect(address, port, laddress, lport)
         else
             sock, err = socket.tcp6()
         end
-        if not sock then return nil, err end
-        if laddress then
-            res, err = sock:bind(laddress, lport)
-            if not res then 
-                sock:close()
-                return nil, err 
+        if sock then
+            if laddress then
+                res, err = sock:bind(laddress, lport)
+                if not res then
+                    sock:close()
+                    return nil, err
+                end
             end
-        end
-        res, err = sock:connect(alt.addr, port)
-        if not res then 
-            sock:close()
-        else
-            return sock 
+            res, err = sock:connect(alt.addr, port)
+            if not res then
+                sock:close()
+            else
+                return sock
+            end
         end
     end
     return nil, err
@@ -57,17 +58,18 @@ function bind(host, port, backlog)
         else
             sock, err = socket.tcp6()
         end
-        if not sock then return nil, err end
-        sock:setoption("reuseaddr", true)
-        res, err = sock:bind(alt.addr, port)
-        if not res then
-            sock:close()
-        else
-            res, err = sock:listen(backlog)
+        if sock then
+            sock:setoption("reuseaddr", true)
+            res, err = sock:bind(alt.addr, port)
             if not res then
                 sock:close()
             else
-                return sock
+                res, err = sock:listen(backlog)
+                if not res then
+                    sock:close()
+                else
+                    return sock
+                end
             end
         end
     end
