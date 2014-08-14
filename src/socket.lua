@@ -17,11 +17,11 @@ module("socket")
 -----------------------------------------------------------------------------
 function connect(address, port, laddress, lport)
     if address == "*" then address = "0.0.0.0" end
-    local addrinfo, err = socket.dns.getaddrinfo(address);
+    local addrinfo, err = socket.dns.getaddrinfo(address)
     if not addrinfo then return nil, err end
     local sock, res
     err = "no info on address"
-    for i, alt in base.ipairs(addrinfo) do 
+    for i, alt in base.ipairs(addrinfo) do
         if alt.family == "inet" then
             sock, err = socket.tcp()
         else
@@ -47,7 +47,7 @@ end
 
 function bind(host, port, backlog)
     if host == "*" then host = "0.0.0.0" end
-    local addrinfo, err = socket.dns.getaddrinfo(host);
+    local addrinfo, err = socket.dns.getaddrinfo(host)
     if not addrinfo then return nil, err end
     local sock, res
     err = "no info on address"
@@ -60,16 +60,16 @@ function bind(host, port, backlog)
         if not sock then return nil, err end
         sock:setoption("reuseaddr", true)
         res, err = sock:bind(alt.addr, port)
-        if not res then 
+        if not res then
             sock:close()
-        else 
+        else
             res, err = sock:listen(backlog)
-            if not res then 
+            if not res then
                 sock:close()
             else
                 return sock
             end
-        end 
+        end
     end
     return nil, err
 end
