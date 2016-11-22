@@ -260,7 +260,7 @@ int inet_meth_getsockname(lua_State *L, p_socket ps, int family)
                 return 2;
             } else {
                 inet_ntop(family, &local.sin_addr, name, sizeof(name));
-                lua_pushstring(L, name); 
+                lua_pushstring(L, name);
                 lua_pushnumber(L, ntohs(local.sin_port));
                 lua_pushliteral(L, "inet");
                 return 3;
@@ -276,7 +276,7 @@ int inet_meth_getsockname(lua_State *L, p_socket ps, int family)
                 return 2;
             } else {
                 inet_ntop(family, &local.sin6_addr, name, sizeof(name));
-                lua_pushstring(L, name); 
+                lua_pushstring(L, name);
                 lua_pushnumber(L, ntohs(local.sin6_port));
                 lua_pushliteral(L, "inet6");
                 return 3;
