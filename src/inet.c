@@ -240,7 +240,7 @@ int inet_meth_getpeername(lua_State *L, p_socket ps, int family)
     } else if (family == PF_INET6) {
         lua_pushliteral(L, "inet6");
     } else {
-        lua_pushliteral(L, "uknown family");
+        lua_pushliteral(L, "unknown family");
     }
     return 3;
 }
