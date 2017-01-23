@@ -112,7 +112,24 @@ static int meth_getfd(lua_State *L) {
 static int meth_setfd(lua_State *L) {
     p_serial srl = (p_serial) auxiliar_checkgroup(L, "serial{any}", 1);
     srl->sock = (t_socket) luaL_checknumber(L, 2);
-    return 0;
+    lua_pop(L, 2);
+    int fcntl_ret = 0;
+
+    /* we want non-blocking I/O */
+    fcntl_ret = fcntl(srl->sock, F_SETFL, FNDELAY);
+    if(fcntl_ret < 0) {
+        lua_pushnil(L);
+        lua_pushstring(L, socket_strerror(fcntl_ret));
+        lua_pushnumber(L, fcntl_ret);
+        return 3;
+    }
+
+    /*  We don't want to share the file descriptor with any children we fork. */
+    fcntl(srl->sock, F_SETFD, FD_CLOEXEC);
+
+    socket_setnonblocking(&srl->sock);
+    lua_pushnumber(L, 1);
+    return 1;
 }
 
 static int meth_dirty(lua_State *L) {
