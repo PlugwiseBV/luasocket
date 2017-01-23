@@ -535,13 +535,27 @@ static int meth_options(lua_State *L) {
 * Creates a serial object
 \*-------------------------------------------------------------------------*/
 static int global_create(lua_State *L) {
+    p_serial srl;
+    if (lua_isnoneornil(L, 1)) {
+        /* allocate unix object */
+        srl = (p_serial) lua_newuserdata(L, sizeof(t_serial));
+
+        /* set its type as client object */
+        auxiliar_setclass(L, "serial{client}", -1);
+
+        io_init(&srl->io, (p_send) socket_write, (p_recv) socket_read,
+                (p_error) socket_ioerror, &srl->sock);
+        timeout_init(&srl->tm, -1, -1);
+        buffer_init(&srl->buf, &srl->io, &srl->tm);
+
+        return 1;
+    }
     bool rd = false;
     bool wr = false;
     const char* path    = luaL_checkstring(L, 1);
     const char* mode    = luaL_checkstring(L, 2);
     int fcntl_ret = 0;
     struct termios options;
-    p_serial srl;
     t_socket sock;
     int i = 0;
     char m;
@@ -558,8 +572,6 @@ static int global_create(lua_State *L) {
     } while (m != '\0' && (!rd || !wr));
     luaL_argcheck(L, (rd || wr), 2, "Please specify at least read or write mode");
     luaL_argcheck(L, (lua_istable(L, 3) || lua_isnoneornil(L, 3)), 3, "Please pass a table or a nil");
-
-    /* printf("read, write: %i, %i\n", rd, wr);*/
 
     /* allocate unix object */
     srl = (p_serial) lua_newuserdata(L, sizeof(t_serial));
