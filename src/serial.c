@@ -190,7 +190,7 @@ do {                                                                            
 /*  Get a parameter from a termios option struct and add it to a lua table. */
 #define GET_FLAG_FROM_TERMIOS_STRUCT(L, options, tab_ind, flag_type, key_str, constant)                                     \
 do {                                                                                                                        \
-    lua_pushboolean((L), (options)->flag_type && (constant));                                                               \
+    lua_pushboolean((L), (options)->flag_type & (constant));                                                               \
     lua_setfield((L), (tab_ind), (key_str));                                                                                \
 } while (0)
 
@@ -496,17 +496,17 @@ static int meth_options(lua_State *L) {
         default:        lua_pushliteral(L,  "unknown"); break;
     };
     lua_setfield(L, 1, "ispeed");
-    if          (options.c_cflag && CS5) {
-        lua_pushnumber(L, 5);
-        lua_setfield(L, 1, "csize");
-    } else if   (options.c_cflag && CS6) {
-        lua_pushnumber(L, 6);
+    if          (options.c_cflag && CS8) {
+        lua_pushnumber(L, 8);
         lua_setfield(L, 1, "csize");
     } else if   (options.c_cflag && CS7) {
         lua_pushnumber(L, 7);
         lua_setfield(L, 1, "csize");
-    } else if   (options.c_cflag && CS8) {
-        lua_pushnumber(L, 8);
+    } else if   (options.c_cflag && CS6) {
+        lua_pushnumber(L, 6);
+        lua_setfield(L, 1, "csize");
+    } else if   (options.c_cflag && CS5) {
+        lua_pushnumber(L, 5);
         lua_setfield(L, 1, "csize");
     };
     /*  Start with the control flags */
