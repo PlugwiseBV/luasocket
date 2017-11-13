@@ -153,7 +153,7 @@ function metat.__index:receivestatusline()
     if status ~= "HTTP/" then return nil, status end
     -- otherwise proceed reading a status line
     status = self.try(self.c:receive("*l", status))
-    local code = socket.skip(2, string.find(status, "HTTP/%d*%.%d* (%d%d%d)"))
+    local code = socket.skip(2, string.find(status, "^%d*%.%d* (%d%d%d)"))
     return self.try(base.tonumber(code), status)
 end
 
